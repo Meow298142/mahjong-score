@@ -17,6 +17,8 @@
   };
 
   var KIND_LABEL = { chi: '吃', pon: '碰', minkan: '明杠', ankan: '暗杠', kakan: '加杠' };
+  // 录入每种副露需要点几张牌：吃 3 张顺子；碰 3 张；明杠 / 暗杠 4 张；加杠 3 张（原有碰的三张）
+  var KIND_NEED = { chi: 3, pon: 3, minkan: 4, ankan: 4, kakan: 1 };
 
   /* ---------- 牌元素 ---------- */
   function tileEl(t, opts) {
@@ -24,11 +26,13 @@
     var b = document.createElement('button');
     b.type = 'button';
     var base = MJ.redBase(t);
-    b.className = 'tile' + (opts.small ? ' small' : '') + (base >= 27 ? ' honor' : '') + (MJ.isRed(t) ? ' red' : '') + (opts.on ? ' on' : '');
+    var suitCls = base >= 27 ? ' honor' : ' ' + ['m', 'p', 's'][Math.floor(base / 9)];
+    b.className = 'tile' + (opts.small ? ' small' : '') + suitCls + (MJ.isRed(t) ? ' red' : '') + (opts.on ? ' on' : '');
     var num, suit;
     if (base >= 27) { num = MJ.HONORS[base - 27]; suit = ''; }
     else { num = MJ.CN[base % 9]; suit = MJ.SUIT_CN[Math.floor(base / 9)]; }
     b.innerHTML = '<span class="num">' + num + '</span>' + (suit ? '<span class="suit">' + suit + '</span>' : '');
+    if (MJ.isRed(t)) b.title = (opts.title ? opts.title + ' · ' : '') + '赤五' + suit;
     if (opts.title) b.title = opts.title;
     if (opts.onClick) b.addEventListener('click', opts.onClick);
     return b;
@@ -38,10 +42,11 @@
 
   /* ---------- 牌库 ---------- */
   var PALETTE_ROWS = [
-    { label: '万', ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 34] },
-    { label: '筒', ids: [9, 10, 11, 12, 13, 14, 15, 16, 17, 35] },
-    { label: '索', ids: [18, 19, 20, 21, 22, 23, 24, 25, 26, 36] },
-    { label: '字', ids: [27, 28, 29, 30, 31, 32, 33] }
+    { label: '万', ids: [0, 1, 2, 3, 4, 5, 6, 7, 8] },
+    { label: '筒', ids: [9, 10, 11, 12, 13, 14, 15, 16, 17] },
+    { label: '索', ids: [18, 19, 20, 21, 22, 23, 24, 25, 26] },
+    { label: '字', ids: [27, 28, 29, 30, 31, 32, 33] },
+    { label: '赤', ids: [34, 35, 36] }
   ];
 
   function buildPalette(host, onPick) {
@@ -69,7 +74,7 @@
     renderAll();
   }
   function addDraft(t) {
-    var need = (S.draftKind === 'chi') ? 3 : 4;
+    var need = KIND_NEED[S.draftKind] || 3;
     if (S.draft.length >= need) { flash('草稿已满，先点「加入副露」或清空草稿'); return; }
     S.draft.push(t);
     renderAll();
@@ -146,7 +151,7 @@
   function renderDraft() {
     var zone = $('#draftZone');
     zone.innerHTML = '';
-    var need = (S.draftKind === 'chi') ? 3 : 4;
+    var need = KIND_NEED[S.draftKind] || 3;
     if (!S.draft.length) {
       zone.innerHTML = '<div class="empty">' + (S.mode === 'meld' ? '在牌库点选 ' + need + ' 张' : '点上方「录入副露」后从牌库选牌') + '</div>';
       return;
@@ -415,7 +420,8 @@
     bindSeg('#presetSeg', 'data-preset', function (v) { S.preset = v; renderAll(); });
     bindSeg('#meldKindSeg', 'data-kind', function (v) {
       S.draftKind = v;
-      if (v === 'chi' && S.draft.length > 3) S.draft = S.draft.slice(0, 3);
+      var cap = KIND_NEED[v] || 3;
+      if (S.draft.length > cap) S.draft = S.draft.slice(0, cap);
       renderDraft();
     });
 
@@ -460,8 +466,20 @@
     $('#btnDemo').addEventListener('click', loadDemo);
 
     $('#btnAddMeld').addEventListener('click', function () {
-      var need = S.draftKind === 'chi' ? 3 : 4;
-      if (S.draft.length !== need) { flash('这个副露需要 ' + need + ' 张牌'); return; }
+      var need = KIND_NEED[S.draftKind] || 3;
+      if (S.draft.length !== need) { flash(KIND_LABEL[S.draftKind] + '需要 ' + need + ' 张牌'); return; }
+      if (S.draftKind === 'kakan') {
+        var kb = MJ.redBase(S.draft[0]);
+        var hit = -1;
+        S.melds.forEach(function (mm, ii) {
+          if (hit < 0 && mm.kind === 'pon' && MJ.redBase(mm.tiles[0]) === kb) hit = ii;
+        });
+        if (hit < 0) { flash('加杠需要先录入同一种牌的「碰」'); return; }
+        S.melds[hit] = { kind: 'kakan', tiles: [kb, kb, kb, kb] };
+        S.draft = [];
+        renderAll();
+        return;
+      }
       if (S.melds.length >= 4) { flash('最多 4 组副露'); return; }
       if (S.hand.length + (S.melds.length + 1) * 3 > 14) { flash('手牌张数会超过 14'); return; }
       var tiles = S.draft.slice().sort(function (a, b) { return MJ.redBase(a) - MJ.redBase(b); });
