@@ -3,25 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f2ece0">
+<meta name="theme-color" content="#0a1411">
 <meta name="description" content="日麻（立直麻将）算点与役种图鉴：输入手牌即可算出番数、符数与点数，支持副露、宝牌、本场、规则预设。">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="favicon.svg">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="日麻算点">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:url" content="https://meow298142.github.io/mahjong-score/">
 <meta property="og:title" content="日麻算点 · 役种图鉴与点数计算">
 <meta property="og:description" content="43 个役种的中文说明与番数，点选 14 张手牌直接算出点数。无登录、无广告。">
-<meta property="og:image" content="og.png">
+<meta property="og:image" content="https://meow298142.github.io/mahjong-score/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <title>日麻算点 · 役种与点数</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
 <header class="top">
   <div class="top-inner">
-    <div class="brand">
-      <h1>日麻算点</h1>
-      <span class="sub">Riichi Score</span>
-    </div>
+    <a class="brand" href="#yaku">
+      <span class="brand-mark" id="brandMark" aria-hidden="true"></span>
+      <span class="brand-text"><b>日麻算点</b><small>RIICHI SCORE</small></span>
+    </a>
     <nav class="tabs" id="tabs">
       <button data-view="yaku" class="on">役种图鉴</button>
       <button data-view="calc">算点台</button>
@@ -32,126 +38,36 @@
 
 <div class="wrap">
 
-  <section class="view" id="view-calc">
-    <div class="calc-grid">
-      <div>
-        <div class="card">
-          <h2>手牌</h2>
-          <div class="hand-zone" id="handZone"></div>
-          <div class="hint" id="handHint">从下方牌库点牌加入手牌；点手牌上的牌可设为和了牌（再点一次取消）。悬停手牌右上角 × 可删牌。</div>
-          <div id="palette" style="margin-top:14px"></div>
-          <div class="toolbar">
-            <button class="btn ghost" id="btnClear">清空</button>
-            <button class="btn ghost" id="btnUndo">撤销</button>
-            <button class="btn ghost" id="btnDemo">示例手牌</button>
-            <span class="hint" id="countHint"></span>
-          </div>
-        </div>
+<section class="view on" id="view-yaku">
 
-        <div class="card">
-          <h2>副露</h2>
-          <div id="meldList"></div>
-          <div class="meld-row" style="margin-top:10px">
-            <div class="seg" id="meldKindSeg" style="max-width:300px">
-              <button data-kind="chi" class="on">吃</button>
-              <button data-kind="pon">碰</button>
-              <button data-kind="minkan">明杠</button>
-              <button data-kind="ankan">暗杠</button>
-              <button data-kind="kakan">加杠</button>
-            </div>
-            <button class="btn" id="btnAddMeld">加入副露</button>
-            <button class="btn ghost tiny" id="btnClearDraft">清空草稿</button>
-          </div>
-          <div class="hand-zone" id="draftZone" style="min-height:60px"></div>
-          <div class="hint">先在下方牌库点选副露用的牌，再点「加入副露」。吃＝同花色连续 3 张；碰＝同一种牌 3 张；明杠 / 暗杠＝同一种牌 4 张；加杠＝1 张（必须已有同牌名的碰）。</div>
-        </div>
+  <div class="hero">
+    <div class="hero-copy">
+      <div class="eyebrow"><i></i>立直麻雀 · 役种与点数</div>
+      <h2>摸到什么牌，<br>就该得多少点。</h2>
+      <p>43 个役种的中文说明与番数，含副露降番。点选 14 张牌，立刻得到番数、符数与点数——支持赤五、宝牌、本场与天鳳／雀魂／M-League 三套规则。</p>
+      <div class="hero-actions">
+        <a class="btn primary lg" href="#calc">现在算点</a>
+        <a class="btn lg" href="#table">点数表</a>
       </div>
-
-      <div>
-        <div class="card" id="resultCard">
-          <h2>结果</h2>
-          <div class="empty">选好 14 张牌后自动计算。</div>
-        </div>
-        <div class="card">
-          <h2>场况</h2>
-
-          <div class="field">
-            <label>座位</label>
-            <div class="seg" id="seatSeg">
-              <button data-seat="0">亲家</button>
-              <button data-seat="1" class="on">子家</button>
-            </div>
-          </div>
-
-          <div class="field">
-            <label>和了方式</label>
-            <div class="seg" id="tsumoSeg">
-              <button data-tsumo="0" class="on">荣和</button>
-              <button data-tsumo="1">自摸</button>
-            </div>
-          </div>
-
-          <div class="field">
-            <label>立直</label>
-            <div class="seg" id="riichiSeg">
-              <button data-riichi="none" class="on">无</button>
-              <button data-riichi="riichi">立直</button>
-              <button data-riichi="double">双立直</button>
-            </div>
-          </div>
-
-          <div class="field">
-            <label>附加役</label>
-            <div class="chk-row" id="extraChks">
-              <label class="chk"><input type="checkbox" data-k="ippatsu">一发</label>
-              <label class="chk"><input type="checkbox" data-k="rinshan">岭上</label>
-              <label class="chk"><input type="checkbox" data-k="chankan">抢杠</label>
-              <label class="chk"><input type="checkbox" data-k="haitei">海底</label>
-              <label class="chk"><input type="checkbox" data-k="houtei">河底</label>
-            </div>
-          </div>
-
-          <div class="field">
-            <label>宝牌指示牌 / 里宝牌指示牌</label>
-            <div id="doraChips" style="display:flex;flex-wrap:wrap;gap:6px;min-height:40px"></div>
-            <div class="toolbar" style="margin-top:4px">
-              <button class="btn tiny" id="btnAddDora">+ 宝牌指示</button>
-              <button class="btn tiny" id="btnAddUra">+ 里宝指示</button>
-            </div>
-          </div>
-
-          <div class="field">
-            <label>本场 / 供托</label>
-            <div style="display:flex;gap:8px">
-              <input class="num-input" id="honba" type="number" min="0" value="0" placeholder="本场">
-              <input class="num-input" id="sticks" type="number" min="0" value="0" placeholder="供托">
-            </div>
-          </div>
-
-          <div class="field">
-            <label>规则预设</label>
-            <div class="seg" id="presetSeg">
-              <button data-preset="tenhou" class="on">天鳳</button>
-              <button data-preset="majsoul">雀魂</button>
-              <button data-preset="mleague">M-League</button>
-            </div>
-          </div>
-        </div>
-
+      <div class="hero-stats">
+        <div><b>43</b><span>役种</span></div>
+        <div><b>37</b><span>牌面</span></div>
+        <div><b>3</b><span>规则预设</span></div>
+        <div><b>0</b><span>广告 · 登录</span></div>
       </div>
     </div>
-  </section>
-
-  <section class="view on" id="view-yaku">
-    <div class="hero">
-      <h2>立直麻将 · 役种与点数</h2>
-      <p>43 个役种的中文说明与番数（含副露降番）。手里有牌要算分？去算点台，点选 14 张直接出结果。</p>
-      <a class="hero-cta" href="#calc">开始算点 →</a>
+    <div class="hero-stage">
+      <div class="hero-tiles" id="heroTiles"></div>
+      <div class="hero-caption">立直 · 平和 · 断幺九 · 一杯口　30 符 4 番　<em>7700</em></div>
     </div>
-    <div class="card">
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>役种图鉴</h2>
       <div class="filter-bar">
         <input id="yakuSearch" placeholder="搜索役种 / 说明，例如 平和">
-        <div class="seg" id="yakuGroupSeg" style="max-width:420px">
+        <div class="seg" id="yakuGroupSeg">
           <button data-g="all" class="on">全部</button>
           <button data-g="1">1 番</button>
           <button data-g="2">2 番</button>
@@ -160,31 +76,167 @@
           <button data-g="13">役满</button>
         </div>
       </div>
-      <table>
-        <thead><tr><th style="width:150px">役种</th><th style="width:110px">番数</th><th>说明</th></tr></thead>
+    </div>
+    <div class="table-wrap">
+      <table class="yaku-table">
+        <thead><tr><th style="width:150px">役种</th><th style="width:120px">番数</th><th>说明</th></tr></thead>
         <tbody id="yakuBody"></tbody>
       </table>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section class="view" id="view-table">
-    <div class="card">
+<section class="view" id="view-calc">
+  <div class="calc-grid">
+
+    <div class="col-main">
+
+      <div class="card">
+        <div class="card-head">
+          <h2>手牌</h2>
+          <span class="hint" id="countHint"></span>
+        </div>
+        <div class="felt">
+          <div class="hand-zone" id="handZone"></div>
+        </div>
+        <div class="hint" id="handHint">从下方牌库点牌加入手牌；点手牌上的牌可设为和了牌（再点一次取消）。悬停手牌右上角 × 可删牌。</div>
+        <div class="toolbar">
+          <button class="btn ghost" id="btnClear">清空</button>
+          <button class="btn ghost" id="btnUndo">撤销</button>
+          <button class="btn ghost" id="btnDemo">示例手牌</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>牌库</h2>
+          <div class="seg compact" id="modeSeg">
+            <button data-m="hand" class="on">录入手牌</button>
+            <button data-m="meld">录入副露</button>
+          </div>
+        </div>
+        <div id="palette" class="palette"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>副露</h2></div>
+        <div id="meldList"></div>
+        <div class="meld-row" style="margin-top:12px">
+          <div class="seg" id="meldKindSeg">
+            <button data-kind="chi" class="on">吃</button>
+            <button data-kind="pon">碰</button>
+            <button data-kind="minkan">明杠</button>
+            <button data-kind="ankan">暗杠</button>
+            <button data-kind="kakan">加杠</button>
+          </div>
+          <button class="btn" id="btnAddMeld">加入副露</button>
+          <button class="btn ghost tiny" id="btnClearDraft">清空草稿</button>
+        </div>
+        <div class="felt thin">
+          <div class="hand-zone" id="draftZone"></div>
+        </div>
+        <div class="hint">先在下方牌库点选副露用的牌，再点「加入副露」。吃＝同花色连续 3 张；碰＝同一种牌 3 张；明杠 / 暗杠＝同一种牌 4 张；加杠＝1 张（必须已有同牌名的碰）。</div>
+      </div>
+
+    </div>
+
+    <aside class="col-side">
+      <div class="card result" id="resultCard">
+        <h2>结果</h2>
+        <div class="empty">选好 14 张牌后自动计算。</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>场况</h2></div>
+
+        <div class="field">
+          <label>座位</label>
+          <div class="seg" id="seatSeg">
+            <button data-seat="0">亲家</button>
+            <button data-seat="1" class="on">子家</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>和了方式</label>
+          <div class="seg" id="tsumoSeg">
+            <button data-tsumo="0" class="on">荣和</button>
+            <button data-tsumo="1">自摸</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>立直</label>
+          <div class="seg" id="riichiSeg">
+            <button data-riichi="none" class="on">无</button>
+            <button data-riichi="riichi">立直</button>
+            <button data-riichi="double">双立直</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>附加役</label>
+          <div class="chk-row" id="extraChks">
+            <label class="chk"><input type="checkbox" data-k="ippatsu">一发</label>
+            <label class="chk"><input type="checkbox" data-k="rinshan">岭上</label>
+            <label class="chk"><input type="checkbox" data-k="chankan">抢杠</label>
+            <label class="chk"><input type="checkbox" data-k="haitei">海底</label>
+            <label class="chk"><input type="checkbox" data-k="houtei">河底</label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>宝牌指示牌 / 里宝牌指示牌</label>
+          <div id="doraChips" class="dora-chips"></div>
+          <div class="toolbar" style="margin-top:6px">
+            <button class="btn tiny" id="btnAddDora">＋ 宝牌指示</button>
+            <button class="btn tiny" id="btnAddUra">＋ 里宝指示</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>本场 / 供托</label>
+          <div class="two-up">
+            <input class="num-input" id="honba" type="number" min="0" value="0" placeholder="本场">
+            <input class="num-input" id="sticks" type="number" min="0" value="0" placeholder="供托">
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:0">
+          <label>规则预设</label>
+          <div class="seg" id="presetSeg">
+            <button data-preset="tenhou" class="on">天鳳</button>
+            <button data-preset="majsoul">雀魂</button>
+            <button data-preset="mleague">M-League</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+</section>
+
+<section class="view" id="view-table">
+  <div class="card">
+    <div class="card-head">
+      <h2>点数表</h2>
       <div class="filter-bar">
-        <div class="seg" id="ptSeatSeg" style="max-width:180px">
+        <div class="seg" id="ptSeatSeg">
           <button data-seat="1" class="on">子家</button>
           <button data-seat="0">亲家</button>
         </div>
-        <div class="seg" id="ptModeSeg" style="max-width:180px">
+        <div class="seg" id="ptModeSeg">
           <button data-mode="ron" class="on">荣和</button>
           <button data-mode="tsumo">自摸</button>
         </div>
-        <span class="hint">天鳳规则（无切上满贯）。20 符仅平和自摸 / 食い平和形；25 符仅七对子。</span>
       </div>
-      <div class="pt-table-wrap"><table class="pt-table" id="ptTable"></table></div>
     </div>
-  </section>
+    <p class="hint" style="margin-top:0">天鳳规则（无切上满贯）。20 符仅平和自摸 / 食い平和形；25 符仅七对子。</p>
+    <div class="pt-table-wrap"><table class="pt-table" id="ptTable"></table></div>
+  </div>
+</section>
 
-  <div class="foot">引擎 engine.js v0.1 · 规则基准 天鳳 · 无广告、无登录、离线可用</div>
+<div class="foot">引擎 engine.js v0.1 · 规则基准 天鳳 · 无广告、无登录、离线可用</div>
 </div>
 
 <div class="mbar" id="mbar"><b>—</b><span>还没算点</span><em>去算点台 ›</em></div>
@@ -192,13 +244,14 @@
 <div class="modal" id="modal">
   <div class="modal-box">
     <h3 id="modalTitle">选择牌</h3>
-    <div id="modalPalette"></div>
-    <div class="toolbar" style="margin-top:12px">
+    <div id="modalPalette" class="palette"></div>
+    <div class="toolbar" style="margin-top:16px">
       <button class="btn" id="modalClose">关闭</button>
     </div>
   </div>
 </div>
 
+<script src="tiles.js"></script>
 <script src="engine.js"></script>
 <script src="app.js"></script>
 </body>

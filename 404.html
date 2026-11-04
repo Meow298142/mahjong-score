@@ -2,26 +2,40 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a1411">
 <title>页面不存在 · 日麻算点</title>
+<meta name="robots" content="noindex">
 <link rel="stylesheet" href="/styles.css">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 </head>
 <body>
-<header class="top"><div class="top-inner">
-  <div class="brand"><h1>日麻算点</h1><span class="sub">Riichi Score</span></div>
-  <nav class="tabs">
-    <a class="tabbtn" href="/#yaku">役种图鉴</a>
-    <a class="tabbtn" href="/#calc">算点台</a>
-    <a class="tabbtn" href="/#table">点数表</a>
-  </nav>
-</div></header>
+
+<header class="top">
+  <div class="top-inner">
+    <a class="brand" href="/">
+      <span class="brand-mark" id="brandMark" aria-hidden="true"></span>
+      <span class="brand-text"><b>日麻算点</b><small>RIICHI SCORE</small></span>
+    </a>
+    <nav class="tabs">
+      <a href="/#yaku">役种图鉴</a>
+      <a href="/#calc">算点台</a>
+      <a href="/#table">点数表</a>
+    </nav>
+  </div>
+</header>
+
 <div class="wrap">
-  <div class="card" style="text-align:center;padding:60px 24px">
-    <div style="font-size:64px;font-weight:700;color:#14523f;letter-spacing:-.02em">404</div>
-    <p style="color:#7c7466;margin:8px 0 24px">这个页面不存在。可能链接打错了，或者页面已经搬家。</p>
-    <a class="hero-cta" href="/">回首页</a>
+  <div class="card" style="text-align:center;padding:66px 24px 58px">
+    <div style="font-family:var(--font-serif);font-size:76px;font-weight:600;line-height:1;color:var(--gold-2);letter-spacing:.02em">404</div>
+    <p style="color:var(--muted);font-size:15px;margin:16px 0 28px">这一手牌打丢了。页面不存在，可能链接打错，或者已经搬家。</p>
+    <a class="btn primary lg" href="/">回首页</a>
   </div>
 </div>
+
+<script src="/tiles.js"></script>
+<script>
+  document.getElementById('brandMark').innerHTML = '<span class="tile">' + window.MJTiles.svg(32) + '</span>';
+</script>
 </body>
 </html>

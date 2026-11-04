@@ -1,6 +1,7 @@
 (function () {
   'use strict';
   var MJ = window.MJ;
+  var T = window.MJTiles;
   if (!MJ) { document.body.innerHTML = '<p style="padding:40px">引擎 engine.js 未加载。</p>'; return; }
 
   function $(sel, root) { return (root || document).querySelector(sel); }
@@ -17,32 +18,41 @@
   };
 
   var KIND_LABEL = { chi: '吃', pon: '碰', minkan: '明杠', ankan: '暗杠', kakan: '加杠' };
-  // 录入每种副露需要点几张牌：吃 3 张顺子；碰 3 张；明杠 / 暗杠 4 张；加杠 3 张（原有碰的三张）
   var KIND_NEED = { chi: 3, pon: 3, minkan: 4, ankan: 4, kakan: 1 };
 
   /* ---------- 牌元素 ---------- */
   function tileEl(t, opts) {
     opts = opts || {};
-    var b = document.createElement('button');
-    b.type = 'button';
+    var el = document.createElement(opts.plain ? 'span' : 'button');
+    if (!opts.plain) el.type = 'button';
     var base = MJ.redBase(t);
-    var suitCls = base >= 27 ? ' honor' : ' ' + ['m', 'p', 's'][Math.floor(base / 9)];
-    b.className = 'tile' + (opts.small ? ' small' : '') + suitCls + (MJ.isRed(t) ? ' red' : '') + (opts.on ? ' on' : '');
-    var num, suit;
-    if (base >= 27) { num = MJ.HONORS[base - 27]; suit = ''; }
-    else { num = MJ.CN[base % 9]; suit = MJ.SUIT_CN[Math.floor(base / 9)]; }
-    b.innerHTML = '<span class="num">' + num + '</span>' + (suit ? '<span class="suit">' + suit + '</span>' : '');
-    if (MJ.isRed(t)) b.title = (opts.title ? opts.title + ' · ' : '') + '赤五' + suit;
-    if (opts.title) b.title = opts.title;
-    if (opts.onClick) b.addEventListener('click', opts.onClick);
-    return b;
+    var cls = 'tile';
+    if (opts.xs) cls += ' xs';
+    else if (opts.sm) cls += ' sm';
+    if (MJ.isRed(t)) cls += ' red';
+    if (opts.on) cls += ' on';
+    el.className = cls;
+    el.innerHTML = T.svg(t);
+    el.title = opts.title || (MJ.tileLabel(t) + (MJ.isRed(t) ? '（赤宝牌）' : ''));
+    el.setAttribute('aria-label', MJ.tileLabel(t));
+    if (!opts.plain) {
+      if (opts.onClick) el.addEventListener('click', opts.onClick);
+      else el.style.cursor = 'default';
+    }
+    return el;
+  }
+
+  function tileRow(ids) {
+    var frag = document.createDocumentFragment();
+    ids.forEach(function (t) { frag.appendChild(tileEl(t, { plain: true })); });
+    return frag;
   }
 
   function totalTiles() { return S.hand.length + S.melds.length * 3; }
 
   /* ---------- 牌库 ---------- */
   var PALETTE_ROWS = [
-    { label: '万', ids: [0, 1, 2, 3, 4, 5, 6, 7, 8] },
+    { label: '萬', ids: [0, 1, 2, 3, 4, 5, 6, 7, 8] },
     { label: '筒', ids: [9, 10, 11, 12, 13, 14, 15, 16, 17] },
     { label: '索', ids: [18, 19, 20, 21, 22, 23, 24, 25, 26] },
     { label: '字', ids: [27, 28, 29, 30, 31, 32, 33] },
@@ -61,7 +71,7 @@
       var tw = document.createElement('div');
       tw.className = 'tiles';
       row.ids.forEach(function (id) {
-        tw.appendChild(tileEl(id, { small: true, onClick: function () { onPick(id); } }));
+        tw.appendChild(tileEl(id, { onClick: function () { onPick(id); } }));
       });
       r.appendChild(tw);
       host.appendChild(r);
@@ -84,7 +94,7 @@
   function flash(msg) {
     flashMsg = msg;
     renderHint();
-    window.setTimeout(function () { flashMsg = ''; renderHint(); }, 1800);
+    window.setTimeout(function () { flashMsg = ''; renderHint(); }, 1900);
   }
 
   /* ---------- 渲染：手牌 ---------- */
@@ -92,7 +102,7 @@
     var zone = $('#handZone');
     zone.innerHTML = '';
     if (!S.hand.length) {
-      zone.innerHTML = '<div class="empty">还没有牌。点下方牌库开始。</div>';
+      zone.innerHTML = '<div class="empty">还没有牌 · 点下方牌库开始录入</div>';
       return;
     }
     var marked = false;
@@ -131,21 +141,29 @@
       host.innerHTML = '<div class="empty">没有副露（门前清）。</div>';
       return;
     }
+    var row = document.createElement('div');
+    row.className = 'meld-row';
     S.melds.forEach(function (m, i) {
-      var row = document.createElement('div');
-      row.className = 'meld-row';
-      var k = document.createElement('div');
+      var box = document.createElement('div');
+      box.className = 'meld';
+      var k = document.createElement('span');
       k.className = 'kind';
       k.textContent = KIND_LABEL[m.kind] || m.kind;
-      row.appendChild(k);
-      m.tiles.forEach(function (t) { row.appendChild(tileEl(t, { small: true })); });
+      box.appendChild(k);
+      var tw = document.createElement('span');
+      tw.className = 'tiles';
+      m.tiles.forEach(function (t) { tw.appendChild(tileEl(t, { plain: true })); });
+      box.appendChild(tw);
       var del = document.createElement('button');
-      del.className = 'btn ghost tiny';
-      del.textContent = '删';
+      del.className = 'del';
+      del.type = 'button';
+      del.textContent = '×';
+      del.title = '删除这组副露';
       del.addEventListener('click', function () { S.melds.splice(i, 1); renderAll(); });
-      row.appendChild(del);
-      host.appendChild(row);
+      box.appendChild(del);
+      row.appendChild(box);
     });
+    host.appendChild(row);
   }
 
   function renderDraft() {
@@ -157,58 +175,49 @@
       return;
     }
     S.draft.forEach(function (t, i) {
-      var b = tileEl(t, { small: true });
-      b.addEventListener('click', function () { S.draft.splice(i, 1); renderAll(); });
+      var b = tileEl(t, { onClick: function () { S.draft.splice(i, 1); renderAll(); } });
       zone.appendChild(b);
     });
+  }
+
+  function doraChip(t, i, isUra) {
+    var w = document.createElement('div');
+    w.className = 'dora-chip' + (isUra ? ' is-ura' : '');
+    w.appendChild(tileEl(t, { plain: true }));
+    var arrow = document.createElement('span');
+    arrow.className = 'to';
+    arrow.textContent = '→';
+    w.appendChild(arrow);
+    var nd = tileEl(MJ.nextDora(t), { plain: true });
+    nd.classList.add('mini');
+    w.appendChild(nd);
+    var x = document.createElement('button');
+    x.className = 'x';
+    x.type = 'button';
+    x.textContent = '×';
+    x.title = '移除';
+    x.addEventListener('click', function () {
+      if (isUra) S.ura.splice(i, 1); else S.dora.splice(i, 1);
+      renderAll();
+    });
+    w.appendChild(x);
+    return w;
   }
 
   function renderDora() {
     var host = $('#doraChips');
     host.innerHTML = '';
-    S.dora.forEach(function (t, i) {
-      var w = document.createElement('div');
-      w.style.position = 'relative';
-      w.appendChild(tileEl(t, { small: true }));
-      var x = document.createElement('button');
-      x.className = 'x';
-      x.textContent = '×';
-      x.style.position = 'absolute';
-      x.style.top = '-6px';
-      x.style.right = '-6px';
-      x.style.cssText += ';width:16px;height:16px;border-radius:50%;border:0;background:#6b6353;color:#fff;font-size:10px;line-height:16px;cursor:pointer';
-      x.addEventListener('click', function () { S.dora.splice(i, 1); renderAll(); });
-      w.appendChild(x);
-      var tag = document.createElement('div');
-      tag.style.cssText = 'font-size:10px;color:#8a7f6b;text-align:center;margin-top:2px';
-      tag.textContent = '→' + MJ.tileLabel(MJ.nextDora(t));
-      w.appendChild(tag);
-      host.appendChild(w);
-    });
-    S.ura.forEach(function (t, i) {
-      var w = document.createElement('div');
-      w.style.position = 'relative';
-      w.appendChild(tileEl(t, { small: true }));
-      var x = document.createElement('button');
-      x.textContent = '×';
-      x.style.cssText = 'position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;border:0;background:#6b6353;color:#fff;font-size:10px;line-height:16px;cursor:pointer';
-      x.addEventListener('click', function () { S.ura.splice(i, 1); renderAll(); });
-      w.appendChild(x);
-      var tag = document.createElement('div');
-      tag.style.cssText = 'font-size:10px;color:#8a7f6b;text-align:center;margin-top:2px';
-      tag.textContent = '里→' + MJ.tileLabel(MJ.nextDora(t));
-      w.appendChild(tag);
-      host.appendChild(w);
-    });
+    S.dora.forEach(function (t, i) { host.appendChild(doraChip(t, i, false)); });
+    S.ura.forEach(function (t, i) { host.appendChild(doraChip(t, i, true)); });
     if (!S.dora.length && !S.ura.length) {
-      host.innerHTML = '<div class="empty" style="padding:0">未设置（无宝牌）</div>';
+      host.innerHTML = '<div class="empty" style="padding:2px 0">未设置 · 无宝牌</div>';
     }
   }
 
   function renderHint() {
     var need = 14 - S.melds.length * 3;
     var txt = '手牌 ' + S.hand.length + ' / ' + need;
-    if (S.melds.length) txt += '（副露 ' + S.melds.length + ' 组）';
+    if (S.melds.length) txt += ' · 副露 ' + S.melds.length + ' 组';
     if (S.win !== null) txt += ' · 和了牌 ' + MJ.tileLabel(S.win);
     if (flashMsg) txt = flashMsg;
     $('#countHint').textContent = txt;
@@ -270,6 +279,13 @@
     if (em) bar.querySelector('em').textContent = em;
   }
 
+  function setGroupHtml(tiles, extraCls) {
+    var g = document.createElement('div');
+    g.className = 'setgroup' + (extraCls ? ' ' + extraCls : '');
+    tiles.forEach(function (t) { g.appendChild(tileEl(t, { plain: true })); });
+    return g;
+  }
+
   function renderResult() {
     var card = $('#resultCard');
     var res = compute();
@@ -280,68 +296,109 @@
     }
     var b = res.best;
     var isDealer = S.seat === 0;
-    var parts = [];
-    parts.push('<h2>结果</h2>');
-    parts.push('<div class="result-head"><div class="pts">' + b.grandTotal + '<small>点</small></div></div>');
+    card.innerHTML = '';
+    var h2 = document.createElement('h2');
+    h2.textContent = '结果';
+    card.appendChild(h2);
+
+    var head = document.createElement('div');
+    head.className = 'result-head';
+    head.innerHTML = '<div class="pts">' + b.grandTotal + '<small>点</small></div>';
+    card.appendChild(head);
+
     var meta = (isDealer ? '亲家' : '子家') + ' · ' + (S.tsumo ? '自摸' : '荣和') + ' · ';
     if (b.yakuman) meta += '役满 ×' + b.yakumanCount;
     else meta += b.han + ' 番 ' + b.fu + ' 符';
     if (b.limitName) meta += ' · ' + b.limitName;
-    parts.push('<div class="meta">' + esc(meta) + '</div>');
+    var m = document.createElement('div');
+    m.className = 'meta';
+    m.textContent = meta;
+    card.appendChild(m);
+
     if (b.honbaExtra || b.stickExtra) {
       var ex = [];
       if (b.honbaExtra) ex.push('本场 +' + b.honbaExtra);
       if (b.stickExtra) ex.push('供托 +' + b.stickExtra);
-      parts.push('<div class="meta">' + esc(ex.join('   ')) + '（合计 ' + b.grandTotal + '）</div>');
+      var m2 = document.createElement('div');
+      m2.className = 'meta';
+      m2.textContent = ex.join('　') + '（合计 ' + b.grandTotal + '）';
+      card.appendChild(m2);
     }
-    var pay = payLines(b);
-    parts.push('<div class="kv"><span class="k">' + (S.tsumo ? '支付' : '放铳者支付') + '</span><span class="v">' + esc(pay.join(' ／ ')) + '</span></div>');
 
-    parts.push('<div class="yaku-list">');
+    var pay = document.createElement('div');
+    pay.className = 'kv';
+    pay.innerHTML = '<span class="k">' + (S.tsumo ? '支付' : '放铳者支付') + '</span><span class="v">' +
+      esc(S.tsumo ? payLines(b).join(' ／ ') : b.payments.map(function (p) { return p.amount; }).join(' + ')) + '</span>';
+    card.appendChild(pay);
+
+    // 牌型（用真牌面）
+    if (b.sets && b.sets.length) {
+      var setsWrap = document.createElement('div');
+      setsWrap.className = 'sets';
+      var closed = b.sets.filter(function (s) { return !s.fromMeld; });
+      var open = b.sets.filter(function (s) { return s.fromMeld; });
+      closed.sort(function (a, c) { return a.t - c.t; });
+      closed.forEach(function (s) { setsWrap.appendChild(setGroupHtml(s.tiles)); });
+      if (b.pair >= 0) setsWrap.appendChild(setGroupHtml([b.pair, b.pair], 'is-pair'));
+      open.forEach(function (s) { setsWrap.appendChild(setGroupHtml(s.tiles, 'is-open')); });
+      card.appendChild(setsWrap);
+    }
+
+    var yl = document.createElement('div');
+    yl.className = 'yaku-list';
     b.yaku.forEach(function (y) {
-      parts.push('<span class="tag' + (b.yakuman ? ' yakuman' : '') + '">' + esc(y.name) + (b.yakuman ? '' : ' ' + y.han) + '</span>');
+      var sp = document.createElement('span');
+      sp.className = 'tag' + (b.yakuman ? ' yakuman' : '');
+      sp.textContent = y.name + (b.yakuman ? '' : ' ' + y.han);
+      yl.appendChild(sp);
     });
     if (!b.yakuman) {
-      if (b.doraHan) parts.push('<span class="tag dora">宝牌 ' + b.doraHan + '</span>');
-      if (b.uraHan) parts.push('<span class="tag dora">里宝 ' + b.uraHan + '</span>');
-      if (b.akaHan) parts.push('<span class="tag dora">赤 ' + b.akaHan + '</span>');
+      if (b.doraHan) yl.appendChild(tagEl('宝牌 ' + b.doraHan, 'dora'));
+      if (b.uraHan) yl.appendChild(tagEl('里宝 ' + b.uraHan, 'dora'));
+      if (b.akaHan) yl.appendChild(tagEl('赤 ' + b.akaHan, 'dora'));
     }
-    parts.push('</div>');
+    card.appendChild(yl);
 
     if (b.fuItems && b.fuItems.length) {
-      parts.push('<div style="margin-top:12px">');
+      var fu = document.createElement('div');
+      fu.style.marginTop = '10px';
       b.fuItems.forEach(function (f) {
-        parts.push('<div class="kv"><span class="k">' + esc(f.label) + '</span><span class="v">' + (f.value > 0 ? '+' : '') + f.value + '</span></div>');
+        var row = document.createElement('div');
+        row.className = 'kv';
+        row.innerHTML = '<span class="k">' + esc(f.label) + '</span><span class="v">' + (f.value > 0 ? '+' : '') + f.value + '</span>';
+        fu.appendChild(row);
       });
-      parts.push('</div>');
-    }
-
-    if (b.sets && b.sets.length) {
-      var groups = [];
-      b.sets.forEach(function (st) {
-        groups.push(st.tiles.map(function (t) { return MJ.tileLabel(t); }).join(''));
-      });
-      if (b.pair >= 0) groups.push(MJ.tileLabel(b.pair) + MJ.tileLabel(b.pair));
-      parts.push('<div class="meta" style="margin-top:12px">牌型：' + esc(groups.join(' / ')) + '</div>');
+      card.appendChild(fu);
     }
 
     if (res.alternatives && res.alternatives.length) {
-      parts.push('<div style="margin-top:12px">');
+      var altWrap = document.createElement('div');
+      altWrap.style.marginTop = '12px';
       res.alternatives.forEach(function (a) {
-        parts.push('<div class="alt">另有 ' + a.han + ' 番 ' + a.fu + ' 符 ' + a.total + ' 点：' + esc(a.yaku) + '</div>');
+        var alt = document.createElement('div');
+        alt.className = 'alt';
+        alt.textContent = '另有 ' + a.han + ' 番 ' + a.fu + ' 符 ' + a.total + ' 点：' + a.yaku;
+        altWrap.appendChild(alt);
       });
-      parts.push('</div>');
+      card.appendChild(altWrap);
     }
-    card.innerHTML = parts.join('');
 
     var barSub = (isDealer ? '亲家' : '子家') + ' · ' + (S.tsumo ? '自摸' : '荣和') + ' · ' +
       (b.yakuman ? '役满 ×' + b.yakumanCount : b.han + ' 番 ' + b.fu + ' 符') + (b.limitName ? ' · ' + b.limitName : '');
     updateBar(b.grandTotal, barSub, '看明细 ›');
   }
 
+  function tagEl(text, cls) {
+    var sp = document.createElement('span');
+    sp.className = 'tag' + (cls ? ' ' + cls : '');
+    sp.textContent = text;
+    return sp;
+  }
+
   /* ---------- 事件 ---------- */
   function bindSeg(id, attr, cb) {
     var host = $(id);
+    if (!host) return;
     host.addEventListener('click', function (e) {
       var btn = e.target.closest('button');
       if (!btn || !host.contains(btn)) return;
@@ -396,12 +453,7 @@
   }
 
   function initCalc() {
-    var modeBar = document.createElement('div');
-    modeBar.className = 'seg';
-    modeBar.style.maxWidth = '320px';
-    modeBar.style.marginBottom = '10px';
-    modeBar.innerHTML = '<button data-m="hand" class="on">录入手牌</button><button data-m="meld">录入副露</button>';
-    $('#palette').parentNode.insertBefore(modeBar, $('#palette'));
+    var modeBar = $('#modeSeg');
     modeBar.addEventListener('click', function (e) {
       var btn = e.target.closest('button');
       if (!btn) return;
@@ -583,7 +635,29 @@
     $('#ptTable').innerHTML = html.join('');
   }
 
+  /* ---------- 首屏 / 品牌 ---------- */
+  function initDecor() {
+    var mark = $('#brandMark');
+    if (mark) {
+      var t = tileEl(32, { plain: true });
+      mark.appendChild(t);
+    }
+    var host = $('#heroTiles');
+    if (!host) return;
+    var hand = [1, 2, 3, 1, 2, 3, 13, 14, 15, 23, 24, 25, 25, 25];
+    hand.forEach(function (id, i) {
+      var t = tileEl(id, { plain: true });
+      var mid = (hand.length - 1) / 2;
+      var d = i - mid;
+      t.style.setProperty('--rot', (d * 1.9).toFixed(2) + 'deg');
+      t.style.setProperty('--dy', (Math.pow(Math.abs(d), 1.7) * 0.75).toFixed(1) + 'px');
+      t.style.animationDelay = (i * 32) + 'ms';
+      host.appendChild(t);
+    });
+  }
+
   /* ---------- 启动 ---------- */
+  initDecor();
   initTabs();
   initCalc();
   bindSeg('#yakuGroupSeg', 'data-g', function (v) { yakuFilter.group = v; renderYaku(); });

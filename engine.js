@@ -5,9 +5,9 @@
 (function (global) {
   'use strict';
 
-  var HONORS = ['东', '南', '西', '北', '白', '发', '中'];
+  var HONORS = ['東', '南', '西', '北', '白', '發', '中'];
   var CN = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
-  var SUIT_CN = ['万', '筒', '索'];
+  var SUIT_CN = ['萬', '筒', '索'];
   var DRAGON_BASE = 31;          // 白 发 中
   var WIND_BASE = 27;            // 东 南 西 北
 
